@@ -1,13 +1,94 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  cpf       String   @unique
+  senha     String
+  role      String   @default("USER") // 👈 AQUI
+  ranking   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  avaliacoes Avaliacao[]
+  leituras   Leitura[]
+  comentarios Comentario[]
+  clubes     ClubeUsuario[]
+}
+
+model Livro {
+  id        Int      @id @default(autoincrement())
+  titulo    String
+  autor     String
+  descricao String?
+  ano       Int?
+  genero    String
+  capaUrl   String?
+  createdAt DateTime @default(now())
+
+  avaliacoes  Avaliacao[]
+  leituras    Leitura[]
+  comentarios Comentario[]
+}
+
+model Avaliacao {
+  id         Int      @id @default(autoincrement())
+  nota       Int
+  comentario String?
+  createdAt  DateTime @default(now())
+
+  usuarioId Int
+  livroId   Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  livro   Livro   @relation(fields: [livroId], references: [id])
+}
+
+model Leitura {
+  id        Int      @id @default(autoincrement())
+  status    String
+  progresso Int?
+  createdAt DateTime @default(now())
+
+  usuarioId Int
+  livroId   Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  livro   Livro   @relation(fields: [livroId], references: [id])
+}
+
+model Comentario {
+  id        Int      @id @default(autoincrement())
+  texto     String
+  createdAt DateTime @default(now())
+
+  usuarioId Int
+  livroId   Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  livro   Livro   @relation(fields: [livroId], references: [id])
+}
+
+model Clube {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  descricao String?
+  createdAt DateTime @default(now())
+
+  membros ClubeUsuario[]
+}
+
+model ClubeUsuario {
+  id Int @id @default(autoincrement())
+
+  usuarioId Int
+  clubeId   Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  clube   Clube   @relation(fields: [clubeId], references: [id])
 }
