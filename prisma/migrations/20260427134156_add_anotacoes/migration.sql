@@ -1,0 +1,10 @@
+-- CreateTable
+CREATE TABLE "Anotacao" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "conteudo" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "usuarioId" INTEGER NOT NULL,
+    "livroId" INTEGER NOT NULL,
+    CONSTRAINT "Anotacao_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Anotacao_livroId_fkey" FOREIGN KEY ("livroId") REFERENCES "Livro" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

@@ -16,10 +16,11 @@ model Usuario {
   ranking   Int      @default(0)
   createdAt DateTime @default(now())
 
-  avaliacoes Avaliacao[]
-  leituras   Leitura[]
+  avaliacoes  Avaliacao[]
+  leituras    Leitura[]
   comentarios Comentario[]
-  clubes     ClubeUsuario[]
+  clubes      ClubeUsuario[]
+  anotacaos   Anotacao[]
 }
 
 model Livro {
@@ -35,6 +36,7 @@ model Livro {
   avaliacoes  Avaliacao[]
   leituras    Leitura[]
   comentarios Comentario[]
+  anotacaos   Anotacao[]
 }
 
 model Avaliacao {
@@ -73,6 +75,22 @@ model Comentario {
 
   usuario Usuario @relation(fields: [usuarioId], references: [id])
   livro   Livro   @relation(fields: [livroId], references: [id])
+}
+
+model Anotacao {
+  id Int @id @default(autoincrement())
+
+  conteudo String
+
+  createdAt DateTime @default(now())
+
+  usuarioId Int
+
+  livroId Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  livro Livro @relation(fields: [livroId], references: [id])
 }
 
 model Clube {
