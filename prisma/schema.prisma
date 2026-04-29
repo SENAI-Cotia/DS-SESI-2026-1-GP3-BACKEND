@@ -111,3 +111,11 @@ model ClubeUsuario {
   usuario Usuario @relation(fields: [usuarioId], references: [id])
   clube   Clube   @relation(fields: [clubeId], references: [id])
 }
+
+model Aluno {
+  id        Int     @id @default(autoincrement())
+  nome      String
+  email     String  @unique
+  senha     String
+  createdAt DateTime @default(now())
+}
