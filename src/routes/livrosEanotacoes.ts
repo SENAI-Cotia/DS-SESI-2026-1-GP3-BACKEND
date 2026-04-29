@@ -100,6 +100,56 @@ router.post("/livros/:id/anotacoes", async (req, res) => {
     }
 
 })
+
+router.get("/livros/:id", async (req, res) => {
+
+    const id = Number(req.params.id)
+ 
+    try {
+
+        const livro = await prisma.livro.findUnique({
+
+            where: { id }
+
+        })
+ 
+        if (!livro) {
+
+            return res.status(404).json({ error: "Livro não encontrado" })
+
+        }
+ 
+        res.json(livro)
+
+    } catch (error) {
+
+        res.status(500).json({ error: "Erro ao buscar livro" })
+
+    }
+
+})
+ 
+
+router.get("/livros", async (req, res) => {
+    const { titulo } = req.query
+
+    try {
+        const livros = await prisma.livro.findMany({
+            where: titulo
+                ? {
+                      titulo: {
+                          contains: String(titulo),
+                          mode: "insensitive"
+                      }
+                  }
+                : {}
+        })
+
+        res.json(livros)
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao buscar livros" })
+    }
+})
  
 
 export default router
