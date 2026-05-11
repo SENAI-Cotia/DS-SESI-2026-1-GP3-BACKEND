@@ -62,7 +62,7 @@ router.post("/avaliacao", async (req, res) => {
         console.error(error)
 
         return res.status(500).json({
-            error: "Erro ao postar avaliação"
+            error: "Erro ao postar avaliação do usuário"
         })
     }
 })
