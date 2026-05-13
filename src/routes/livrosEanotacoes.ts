@@ -150,6 +150,46 @@ router.get("/livros", async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar livros" })
     }
 })
+
+router.delete("/livros/:id", async (req, res) => {
+    const id = Number(req.params.id)
+
+    try {
+        await prisma.livro.delete({
+            where: { id }
+        })
+
+        return res.status(204).send()
+    } catch (error) {
+        return res.status(404).json({ error: "Livro deletado com sucesso"})
+    }
+ 
+})
+
+router.put("/livros/:id", async (req, res) => {
+    const id = Number(req.params.id)
+    const { titulo, autor, genero, ano, descricao, capaUrl } = req.body
+
+   try {
+    const livroAtualizado = await prisma.livro.update({
+        where: { id },
+        data: {
+            titulo,
+            autor,
+            genero,
+            ano,
+            descricao,
+            capaUrl
+
+        }
+    })
+
+    return res.json(livroAtualizado)
+   } catch (error) {
+    return res.status(404).json({ error: "Livro não encontrado"})
+   }
+
+})
  
 
 export default router
