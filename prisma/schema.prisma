@@ -41,10 +41,9 @@ model Livro {
 
 model Avaliacao {
   id         Int      @id @default(autoincrement())
-  nota       Int
   comentario String?
   createdAt  DateTime @default(now())
-
+  nota       Float
   usuarioId Int
   livroId   Int
 
