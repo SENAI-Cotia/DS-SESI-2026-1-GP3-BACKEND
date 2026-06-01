@@ -59,6 +59,30 @@ router.post("/usuarios", async (req, res) => {
   }
 });
 
+router.get("/usuarios", async (req, res) => {
+  try {
+
+    const usuarios = await prisma.usuario.findMany({
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        cpf: true,
+        fotoUrl: true
+      },
+    });
+
+    return res.status(200).json(usuarios);
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Erro ao buscar usuarios",
+    });
+  }
+});
+
 
 
 router.post("/login", async (req, res) => {
@@ -102,6 +126,29 @@ router.post("/login", async (req, res) => {
 
     return res.status(500).json({
       error: "Erro no login",
+    });
+  }
+});
+
+router.get("/login", async (req, res) => {
+  try {
+
+    const logados = await prisma.usuario.findMany({
+      select: {
+        id: true,
+        senha: true,
+        email: true,
+      
+      },
+    });
+
+    return res.status(200).json(logados);
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Erro ao buscar login",
     });
   }
 });
