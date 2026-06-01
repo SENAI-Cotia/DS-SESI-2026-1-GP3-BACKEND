@@ -8,7 +8,7 @@ const router = Router();
 
 router.post("/usuarios", async (req, res) => {
   try {
-    const { email, cpf, senha } = req.body;
+    const { email, cpf, senha, nome, fotoUrl } = req.body;
 
     if (!email || !cpf || !senha) {
       return res.status(400).json({
@@ -38,6 +38,8 @@ router.post("/usuarios", async (req, res) => {
 
     const usuario = await prisma.usuario.create({
        data: {
+        nome,
+        fotoUrl,
         email,
         cpf,
         senha: senhaHash,
