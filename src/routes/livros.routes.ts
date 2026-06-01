@@ -21,8 +21,9 @@ router.post("/livros", async (req, res) => {
                 genero,
                 ano: Number(ano),
                 descricao,
-                capaUrl,
+                capaUrl
             }
+            
         })
 
         res.status(201).json(livro)
@@ -179,7 +180,7 @@ router.put("/livros/:id", async (req, res) => {
             genero,
             ano,
             descricao,
-            capaUrl
+            capaUrl,
 
         }
     })
