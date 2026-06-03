@@ -8,85 +8,81 @@ datasource db {
 }
 
 model Usuario {
+  id Int @id @default(autoincrement())
 
-  id        Int      @id @default(autoincrement())
- 
-  nome      String
+  nome String
 
-  email     String   @unique
+  email String @unique
 
-  cpf       String   @unique
+  cpf String @unique
 
-  senha     String
- 
-  fotoUrl   String?
- 
-  role      String   @default("USER")
+  senha String
 
-  ranking   Int      @default(0)
- 
+  fotoUrl String?
+
+  role String @default("USER")
+
+  ranking Int @default(0)
+
   createdAt DateTime @default(now())
- 
-  avaliacoes  Avaliacao[]
 
-  leituras    Leitura[]
+  avaliacoes Avaliacao[]
+
+  leituras Leitura[]
 
   comentarios Comentario[]
 
-  clubes      ClubeUsuario[]
+  clubes ClubeUsuario[]
 
-  anotacaos   Anotacao[]
+  anotacaos Anotacao[]
 
+  curso String
 }
 
 model Livro {
+  id Int @id @default(autoincrement())
 
-  id        Int      @id @default(autoincrement())
+  titulo String
 
-  titulo    String
-
-  autor     String
+  autor String
 
   descricao String?
 
-  ano       Int?
+  ano Int?
 
-  genero    String
+  genero String
 
-  capaUrl   String?
+  capaUrl String?
 
   createdAt DateTime @default(now())
- 
-  avaliacoes  Avaliacao[]
 
-  leituras    Leitura[]
+  avaliacoes Avaliacao[]
+
+  leituras Leitura[]
 
   comentarios Comentario[]
 
-  anotacaos   Anotacao[]
-
+  anotacaos Anotacao[]
 }
- 
-model Avaliacao {
 
-  id         Int      @id @default(autoincrement())
+model Avaliacao {
+  id Int @id @default(autoincrement())
 
   comentario String?
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  nota       Float
+  nota Float
 
   usuarioId Int
 
-  livroId   Int
- 
+  livroId Int
+
   usuario Usuario @relation(fields: [usuarioId], references: [id])
 
-  livro   Livro   @relation(fields: [livroId], references: [id])
-
+  livro Livro @relation(fields: [livroId], references: [id])
 }
- 
+
 model Leitura {
   id        Int      @id @default(autoincrement())
   status    String
@@ -146,4 +142,3 @@ model ClubeUsuario {
   usuario Usuario @relation(fields: [usuarioId], references: [id])
   clube   Clube   @relation(fields: [clubeId], references: [id])
 }
-

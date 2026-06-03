@@ -1,18 +1,22 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import prisma from "../lib/prisma";
+import multer from "multer"
+import { parse } from "csv-parse/sync"
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() })
 
 
 
 router.post("/usuarios", async (req, res) => {
   try {
-    const { email, cpf, senha, nome, fotoUrl } = req.body;
 
-    if (!email || !cpf || !senha) {
+    const { nome, email, cpf, senha, curso } = req.body;
+
+    if (!nome || !email || !cpf || !senha || !curso) {
       return res.status(400).json({
-        error: "Preencha email, cpf e senha",
+        error: "Preencha nome, email, cpf, senha e curso",
       });
     }
 
@@ -22,13 +26,13 @@ router.post("/usuarios", async (req, res) => {
       });
     }
 
-    const usuarioExistente = await prisma.usuario.findFirst({
+    const alunoExistente = await prisma.usuario.findFirst({
       where: {
         OR: [{ email }, { cpf }],
       },
     });
 
-    if (usuarioExistente) {
+    if (alunoExistente) {
       return res.status(400).json({
         error: "Email ou CPF já cadastrado",
       });
@@ -36,49 +40,25 @@ router.post("/usuarios", async (req, res) => {
 
     const senhaHash = await bcrypt.hash(senha, 10);
 
-    const usuario = await prisma.usuario.create({
-       data: {
+    const aluno = await prisma.usuario.create({
+      data: {
         nome,
-        fotoUrl,
         email,
         cpf,
+        curso,
         senha: senhaHash,
       },
     });
 
-    const { senha: _, ...usuarioSemSenha } = usuario;
+    const { senha: _, ...alunoSemSenha } = aluno;
 
-    return res.status(201).json(usuarioSemSenha);
-
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Erro no servidor",
-    });
-  }
-});
-
-router.get("/usuarios", async (req, res) => {
-  try {
-
-    const usuarios = await prisma.usuario.findMany({
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        cpf: true,
-        fotoUrl: true
-      },
-    });
-
-    return res.status(200).json(usuarios);
+    return res.status(201).json(alunoSemSenha);
 
   } catch (error) {
     console.error(error);
 
     return res.status(500).json({
-      error: "Erro ao buscar usuarios",
+      error: "Erro ao criar aluno",
     });
   }
 });
@@ -130,83 +110,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/login", async (req, res) => {
-  try {
 
-    const logados = await prisma.usuario.findMany({
-      select: {
-        id: true,
-        senha: true,
-        email: true,
-      
-      },
-    });
-
-    return res.status(200).json(logados);
-
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao buscar login",
-    });
-  }
-});
-
-
-
-router.post("/alunos", async (req, res) => {
-  try {
-
-    const { nome, email, cpf, senha } = req.body;
-
-    if (!nome || !email || !cpf || !senha) {
-      return res.status(400).json({
-        error: "Preencha nome, email, cpf e senha",
-      });
-    }
-
-    if (senha.length < 8) {
-      return res.status(400).json({
-        error: "Senha deve ter no mínimo 8 caracteres",
-      });
-    }
-
-    const alunoExistente = await prisma.usuario.findFirst({
-      where: {
-        OR: [{ email }, { cpf }],
-      },
-    });
-
-    if (alunoExistente) {
-      return res.status(400).json({
-        error: "Email ou CPF já cadastrado",
-      });
-    }
-
-    const senhaHash = await bcrypt.hash(senha, 10);
-
-    const aluno = await prisma.usuario.create({
-      data: {
-        nome,
-        email,
-        cpf,
-        senha: senhaHash,
-      },
-    });
-
-    const { senha: _, ...alunoSemSenha } = aluno;
-
-    return res.status(201).json(alunoSemSenha);
-
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao criar aluno",
-    });
-  }
-});
 
 
 
@@ -219,6 +123,7 @@ router.get("/alunos", async (req, res) => {
         nome: true,
         email: true,
         cpf: true,
+        curso: true
       },
     });
 
@@ -232,6 +137,51 @@ router.get("/alunos", async (req, res) => {
     });
   }
 });
+
+interface Aluno {
+  nome: string,
+  curso: string,
+  cpf: string,
+  email: string,
+  senha: string
+}
+
+router.post("/alunos/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "Arquivo inválido!" })
+  }
+
+  try {
+    const alunos: Aluno[] = parse(req.file.buffer, { columns: true, trim: true, skip_empty_lines: true, delimiter: ';', bom: true })
+
+    const alunosValidos = alunos.filter(aluno => aluno.nome && aluno.email && aluno.cpf);
+
+
+    if (alunosValidos.length === 0) {
+      return res.status(400).json({ error: "Nenhum aluno válido encontrado." });
+    }
+
+    const cpfsCadastrados = alunosValidos.map(aluno => aluno.cpf);
+
+    await prisma.usuario.createMany({
+      data: alunosValidos,
+    });
+
+    const usuariosCadastrados = await prisma.usuario.findMany({
+      where: {
+        cpf: {
+          in: cpfsCadastrados
+        }
+      }
+    });
+
+    return res.json(usuariosCadastrados);
+
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ error: "Ocorreu um erro ao processar o csv" })
+  }
+})
 
 
 
@@ -248,6 +198,7 @@ router.get("/alunos/:id", async (req, res) => {
         nome: true,
         email: true,
         cpf: true,
+        curso: true
       },
     });
 
@@ -275,7 +226,7 @@ router.put("/alunos/:id", async (req, res) => {
 
     const id = Number(req.params.id);
 
-    const { nome, email, cpf } = req.body;
+    const { nome, email, cpf, curso } = req.body;
 
     const alunoExiste = await prisma.usuario.findUnique({
       where: { id },
@@ -294,6 +245,7 @@ router.put("/alunos/:id", async (req, res) => {
         nome,
         email,
         cpf,
+        curso
       },
     });
 
