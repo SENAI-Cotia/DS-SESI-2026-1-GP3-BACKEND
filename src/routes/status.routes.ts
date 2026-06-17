@@ -1,9 +1,9 @@
 import { Router } from "express";
 
 import prisma from "../lib/prisma";
- 
+
 const router = Router();
- 
+
 router.get("/status", async (req, res) => {
 
   try {
@@ -17,7 +17,7 @@ router.get("/status", async (req, res) => {
       prisma.avaliacao.count(),
 
     ]);
- 
+
     return res.status(200).json({
 
       livrosCadastrados,
@@ -37,6 +37,5 @@ router.get("/status", async (req, res) => {
   }
 
 });
- 
+
 export default router;
- 
