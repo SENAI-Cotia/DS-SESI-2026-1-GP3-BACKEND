@@ -3,26 +3,22 @@ import bcrypt from "bcrypt";
 import prisma from "../lib/prisma";
 import multer from "multer"
 import { parse } from "csv-parse/sync"
+import jwt, { JwtPayload } from "jsonwebtoken"
+import { authenticate, requireAdmin } from "../middlewares/auth"
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() })
 
-
+const JWT_SECRET = process.env.JWT_SECRET ?? "sesisenai"
 
 router.post("/usuarios", async (req, res) => {
   try {
 
-    const { nome, email, cpf, senha, curso } = req.body;
+    const { nome, email, cpf, curso } = req.body;
 
-    if (!nome || !email || !cpf || !senha || !curso) {
+    if (!nome || !email || !cpf || !curso) {
       return res.status(400).json({
-        error: "Preencha nome, email, cpf, senha e curso",
-      });
-    }
-
-    if (senha.length < 8) {
-      return res.status(400).json({
-        error: "Senha deve ter no mínimo 8 caracteres",
+        error: "Preencha nome, email e cpf",
       });
     }
 
@@ -38,7 +34,9 @@ router.post("/usuarios", async (req, res) => {
       });
     }
 
-    const senhaHash = await bcrypt.hash(senha, 10);
+    const senhaPadrao = "Senai2026"
+
+    const senhaHash = await bcrypt.hash(senhaPadrao, 10)
 
     const aluno = await prisma.usuario.create({
       data: {
@@ -46,6 +44,7 @@ router.post("/usuarios", async (req, res) => {
         email,
         cpf,
         curso,
+        role: "USER",
         senha: senhaHash,
       },
     });
@@ -64,7 +63,6 @@ router.post("/usuarios", async (req, res) => {
 });
 
 
-
 router.post("/login", async (req, res) => {
   try {
 
@@ -76,9 +74,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const user = await prisma.usuario.findFirst({
-      where: { email },
-    });
+    const user = await prisma.usuario.findFirst({ where: { email } });
 
     if (!user) {
       return res.status(404).json({
@@ -86,19 +82,29 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const senhaCorreta = await bcrypt.compare(
-      senha,
-      user.senha
-    );
+    const senhaCorreta = await bcrypt.compare(senha, user.senha);
 
-    if (!senhaCorreta) {
-      return res.status(401).json({
-        error: "Credenciais inválidas",
-      });
+    if (senhaCorreta) {
+      const token = jwt.sign(
+        {
+          userId: user.id,
+          nome: user.nome,
+          role: user.role
+        },
+        JWT_SECRET,
+        { expiresIn: "8h" }
+      )
+
+      return res.status(200).json({ token })
     }
 
     return res.status(200).json({
       message: "Login realizado com sucesso!",
+      user: {
+        id: user.id,
+        nome: user.nome,
+        role: user.role,
+      }
     });
 
   } catch (error) {
@@ -109,8 +115,6 @@ router.post("/login", async (req, res) => {
     });
   }
 });
-
-
 
 
 
@@ -125,6 +129,9 @@ router.get("/alunos", async (req, res) => {
         cpf: true,
         curso: true
       },
+      where: {
+        role: "USER"
+      }
     });
 
     return res.status(200).json(alunos);
@@ -143,7 +150,6 @@ interface Aluno {
   curso: string,
   cpf: string,
   email: string,
-  senha: string
 }
 
 router.post("/alunos/upload", upload.single("file"), async (req, res) => {
@@ -163,8 +169,15 @@ router.post("/alunos/upload", upload.single("file"), async (req, res) => {
 
     const cpfsCadastrados = alunosValidos.map(aluno => aluno.cpf);
 
+    const alunosComSenhaHash = await Promise.all(
+      alunosValidos.map(async (aluno) => ({
+        ...aluno,
+        senha: await bcrypt.hash("Senai2026", 10)
+      }))
+    );
+
     await prisma.usuario.createMany({
-      data: alunosValidos,
+      data: alunosComSenhaHash,
     });
 
     const usuariosCadastrados = await prisma.usuario.findMany({
@@ -174,6 +187,8 @@ router.post("/alunos/upload", upload.single("file"), async (req, res) => {
         }
       }
     });
+
+
 
     return res.json(usuariosCadastrados);
 
@@ -290,6 +305,57 @@ router.delete("/alunos/:id", async (req, res) => {
 
     return res.status(500).json({
       error: "Erro ao deletar aluno",
+    });
+  }
+});
+
+
+router.post("/bibliotecaria", async (req, res) => {
+  try {
+
+    const { nome, email, cpf, senha } = req.body;
+
+    if (!nome || !email || !cpf || !senha) {
+      return res.status(400).json({
+        error: "Preencha nome, email, cpf e senha",
+      });
+    }
+
+    const userExistente = await prisma.usuario.findFirst({
+      where: {
+        OR: [{ email }, { cpf }],
+      },
+    });
+
+    if (userExistente) {
+      return res.status(400).json({
+        error: "Email ou CPF já cadastrado",
+      });
+    }
+
+
+    const senhaHash = await bcrypt.hash(senha, 10)
+
+    const user = await prisma.usuario.create({
+      data: {
+        nome,
+        email,
+        cpf,
+        curso: "bibliotecaria",
+        role: "ADMIN",
+        senha: senhaHash,
+      },
+    });
+
+    const { senha: _, ...userSemSenha } = user;
+
+    return res.status(201).json(userSemSenha);
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Erro ao cadastrar",
     });
   }
 });
