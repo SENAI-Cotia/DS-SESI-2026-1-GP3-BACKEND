@@ -36,7 +36,7 @@ model Usuario {
 
   anotacaos Anotacao[]
 
-  curso String
+  curso String?
 }
 
 model Livro {
