@@ -89,7 +89,8 @@ router.post("/login", async (req, res) => {
         {
           userId: user.id,
           nome: user.nome,
-          role: user.role
+          role: user.role,
+          email: user.email
         },
         JWT_SECRET,
         { expiresIn: "8h" }
@@ -98,13 +99,9 @@ router.post("/login", async (req, res) => {
       return res.status(200).json({ token })
     }
 
-    return res.status(200).json({
-      message: "Login realizado com sucesso!",
-      user: {
-        id: user.id,
-        nome: user.nome,
-        role: user.role,
-      }
+    return res.status(400).json({
+      message: "E-mail e senha incorretos.",
+     
     });
 
   } catch (error) {
@@ -230,6 +227,45 @@ router.get("/alunos/:id", async (req, res) => {
 
     return res.status(500).json({
       error: "Erro ao buscar aluno",
+    });
+  }
+});
+
+router.put("/usuarios/:id", async (req, res) => {
+  try {
+
+    const id = Number(req.params.id);
+
+    const { nome, email, cpf } = req.body;
+
+    const usuarioExiste = await prisma.usuario.findUnique({
+      where: { id },
+    });
+
+    if (!usuarioExiste) {
+      return res.status(404).json({
+        error: "Aluno não encontrado",
+      });
+    }
+
+    const usuarioAtualizado = await prisma.usuario.update({
+      where: { id },
+
+      data: {
+        nome,
+        email,
+        cpf,
+
+      },
+    });
+
+    return res.status(200).json(usuarioAtualizado);
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Erro ao atualizar o usuario",
     });
   }
 });

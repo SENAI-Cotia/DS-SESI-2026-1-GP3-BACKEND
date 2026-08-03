@@ -2,7 +2,8 @@ import { Router } from "express";
 import prisma from "../lib/prisma";
 import multer from "multer"
 import { parse } from "csv-parse/sync"
-import { Livro } from "@prisma/client";
+import { Livro } from "../../generated/prisma/client";
+
 const upload = multer({ storage: multer.memoryStorage() })
 
 
